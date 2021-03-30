@@ -106,3 +106,4 @@ function buildMetadata(sample) {
   
   // Initialize the dashboard
   init();
+  
