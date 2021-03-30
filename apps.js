@@ -1,124 +1,163 @@
-function getPlots(id) {
-    //Read samples.json
-        d3.json("samples.json").then (sampledata =>{
-            console.log(sampledata)
-            var ids = sampledata.samples[0].otu_ids;
-            console.log(ids)
-            var sampleValues =  sampledata.samples[0].sample_values.slice(0,10).reverse();
-            console.log(sampleValues)
-            var labels =  sampledata.samples[0].otu_labels.slice(0,10);
-            console.log (labels)
-        // get only top 10 otu ids for the plot OTU and reversing it. 
-            var OTU_top = ( sampledata.samples[0].otu_ids.slice(0, 10)).reverse();
-        // get the otu id's to the desired form for the plot
-            var OTU_id = OTU_top.map(d => "OTU " + d);
-            console.log(`OTU IDS: ${OTU_id}`)
-         // get the top 10 labels for the plot
-            var labels =  sampledata.samples[0].otu_labels.slice(0,10);
-            console.log(`OTU_labels: ${labels}`)
-            var trace = {
-                x: sampleValues,
-                y: OTU_id,
-                text: labels,
-                marker: {
-                color: 'blue'},
-                type:"bar",
-                orientation: "h",
-            };
-            // create data variable
-            var data = [trace];
+console.log("Hello World")
+
+// use D3 to read in samples dataset and create drop down
+d3.json("samples.json").then( data => {
+    console.log(data);
+
+    // create the dropdown menu list
+    let select = document.getElementById("selDataset")
+    let dropDowns = data.names;
+    console.log(dropDowns);
+
+    for (let i = 0; i < dropDowns.length; i++) {
+        let opt =  dropDowns[i];
+
+        let el = document.createElement("option");
+        el.text = opt;
+        el.value = opt;
+
+        select.add(el);
+    };
     
-            // create layout variable to set plots layout
-            var layout = {
-                title: "Top 10 OTU",
-                yaxis:{
-                    tickmode:"linear",
-                },
-                margin: {
-                    l: 100,
-                    r: 100,
-                    t: 100,
-                    b: 30
-                }
-            };
+});
+
+// create charts to display by chosen id from dropdown
+function dataByID() {
+    d3.json("samples.json").then( data => {
+
+    // get the value of the selection
+    let id = d3.select("#selDataset").property("value");
     
-            // create the bar plot
-        Plotly.newPlot("bar", data, layout);
-            // The bubble chart
-            var trace1 = {
-                x: sampledata.samples[0].otu_ids,
-                y: sampledata.samples[0].sample_values,
-                mode: "markers",
-                marker: {
-                    size: sampledata.samples[0].sample_values,
-                    color: sampledata.samples[0].otu_ids
-                },
-                text:  sampledata.samples[0].otu_labels
+    // filter samples data based on user selection
+    let filteredId = data.samples.filter((d) => d.id === id);
+    console.log(filteredId);
+
+    // SETTING VARIABLES FOR OUTPUT
     
-            };
+    // retreive just the sample_values ---------------------
+    let sampleVs = filteredId.map(d => d.sample_values).sort();
+
+    // get all samples for bubble chart
+    let allSamples = sampleVs[0];
+
+    // get the top 10 sample_values for bar chart
+    let topSamples = allSamples.slice(0, 10).reverse();
+    console.log(topSamples);
+
+    // retrieve the otu_ids  -------------------------
+    let ids = filteredId.map(d => d.otu_ids).sort();
+
+    // get all otu_ids, convert to string, split, and add OTU to each otu_id
+    let allIds = ids[0];
+
+    // get the top 10 otu_ids for bar chart
+    let topIds = allIds.slice(0, 10).reverse().toString().split(",").map((e) => `OTU ${e}`);
+    console.log(topIds);
+
+    // retrieve the otu_label for hovertext ---------------------
+    let labels = filteredId.map(d => d.otu_labels).sort();
+
+    // get all labels for bubble chart
+    let allLabels = labels[0];
+
+    // get the top 10 otu_labels for bar chart
+    let topLabels = allLabels.slice(0, 10).reverse();
+    console.log(topLabels);
+
+    // filter metadata based on selection use == instead of triple because id is int here
+    let metadata = data.metadata.filter((d) => d.id == id);
+    console.log(metadata)
+
+    // CREATING OUTPUTS FOR DISPLAY
+
+    // create metadata display -------------
+    displayData = metadata[0]
+    console.log(displayData)
+
+    indvData = Object.entries(displayData).map(([key, value]) => `<p>${key}: ${value}</p>`).join("");
+    console.log(indvData)
+
+    // display metadata
+    document.getElementById("sample-metadata").innerHTML = indvData 
+
+    // create bar chart -----------------
+    let barData = [{
+        type: "bar",
+        x: topSamples,
+        y: topIds,
+        orientation: "h",
+        text: topLabels,
+        marker: {
+            color: "rgb(31, 119, 180)",
+            opacity: 0.6
+        }
+    }];
+
+    let barLayout = {
+        autosize: false, 
+        width: 1000,
+        height: 500,
+        margin: {
+            l: 75,
+            r: 50,
+            b: 50,
+            pad: 2
+        },
+        title: "Top 10 OTUs (Operational Taxonomic Units) for Selected Individual",
+        xaxis: {
+            title: "Sample Values"
+        }
+    };
+
+    // create bubble chart ------------------
+
+    let bubbleData = [{
+        x: allIds,
+        y: allSamples,
+        mode: "markers",
+        text: allLabels,
+        marker: {
+            size: allSamples,
+            color: allIds,
+            colorscale: "Portland"
+        }
+    }];
+
+    let bubbleLayout = {
+        title: "All OTU Samples for Selected Individual",
+        height: 500,
+        width: 1200,
+        xaxis: {
+            title: "OTU ID"
+        }
+    };
+
+
+    // plot charts -----------------------
+    Plotly.newPlot("bar", barData, barLayout);
+    Plotly.newPlot("bubble", bubbleData, bubbleLayout)
+
+    });
+};
+
+// initialize dashboard with default selection
+function init() {
+    d3.json("samples.json").then( data => {
     
-            // set the layout for the bubble plot
-            var layout_2 = {
-                xaxis:{title: "OTU ID"},
-                height: 600,
-                width: 1000
-            };
-    
-            // creating data variable 
-            var data1 = [trace1];
-    
-        // create the bubble plot
-        Plotly.newPlot("bubble", data1, layout_2); 
+        // create array of options
+        let options = data.names;
         
-        });
-    }  
-    // create the function to get the necessary data
-    function getDemoInfo(id) {
-    // read the json file to get data
-        d3.json("samples.json").then((data)=> {
-    // get the metadata info for the demographic panel
-            var metadata = data.metadata;
-    
-            console.log(metadata)
-    
-          // filter meta data info by id
-           var result = metadata.filter(meta => meta.id.toString() === id)[0];
-          // select demographic panel to put data
-           var demographicInfo = d3.select("#sample-metadata");
-            
-         // empty the demographic info panel each time before getting new id info
-           demographicInfo.html("");
-    
-         // grab the necessary demographic data data for the id and append the info to the panel
-            Object.entries(result).forEach((key) => {   
-                demographicInfo.append("h5").text(key[0].toUpperCase() + ": " + key[1] + "\n");    
-            });
-        });
-    }
-    // create the function for the change event
-    function optionChanged(id) {
-        getPlots(id);
-        getDemoInfo(id);
-    }
-    
-    // create the function for the initial data rendering
-    function init() {
-        // select dropdown menu 
-        var dropdown = d3.select("#selDataset");
-    
-        // read the data 
-        d3.json("samples.json").then((data)=> {
-            console.log(data)
-    
-            // get the id data to the dropdwown menu
-            data.names.forEach(function(name) {
-                dropdown.append("option").text(name).property("value");
-            });
-    
-            // call the functions to display the data and the plots to the page
-            getPlots(data.names[0]);
-            getDemoInfo(data.names[0]);
-        });
-    }
-    
-    init();
+        // select one option
+        let defaultData = options[0];
+        console.log(defaultData)
+
+        // call main plot function
+        dataByID(defaultData)
+    });
+}
+
+// call function to display default data when page opens
+init()
+
+// call dataByID() when user makes a different selection
+d3.selectAll("#selDataset").on("change", dataByID);
