@@ -1,4 +1,4 @@
-// BONUS Solution
+// Bonus Solution
 
 function buildGauge(wfreq) {
     // Enter the washing frequency between 0 and 180
@@ -86,6 +86,6 @@ function buildGauge(wfreq) {
       }
     };
   
-    var GAUGE = document.getElementById("gauge");
-    Plotly.newPlot(GAUGE, data, layout);
-  }
+    var Gauge = document.getElementById("gauge");
+    Plotly.newPlot(Gauge, data, layout);
+  }  
